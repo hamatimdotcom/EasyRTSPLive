@@ -27,21 +27,20 @@
 
 #endif
 
-#define MAX_RTMP_URL_LEN 256
-
 #ifdef _WIN32
-#define KEY "79397037795969576B5A73416C5668646F7164717065394659584E35556C525455457870646D55755A58686C4B56634D5671442F7065424859585A7062695A4359574A76633246414D6A41784E6B566863336C4559584A33615735555A5746745A57467A65513D3D"
-#define RTSP_KEY "6D75724D7A4969576B5A7341717A4E646F7378557065394659584E35556C525455457870646D55755A58686C4931634D5671442F7065424859585A7062695A4359574A76633246414D6A41784E6B566863336C4559584A33615735555A5746745A57467A65513D3D"
+#define RTMP_KEY "79736C36655969576B5A7341436D74646F7054317065394659584E35556C525455457870646D55755A58686C4B56634D5671442F706634675A57467A65513D3D"
+#define RTSP_KEY "6D75724D7A4969576B5A7341436D74646F7054317065394659584E35556C525455457870646D55755A58686C4931634D5671442F706634675A57467A65513D3D"
 #else // linux
-#define KEY "79397037795A4F576B5971414B304A646F723355512F4E6C59584E35636E527A63477870646D5570567778576F502F44346B566863336C4559584A33615735555A57467453584E55614756435A584E30497A49774D546B355A57467A65513D3D"
-#define RTSP_KEY "6D75724D7A4A4F576B596F41717A4E646F73785570664E4659584E35556C525455457870646D5745567778576F502B6C34456468646D6C754A6B4A68596D397A595541794D4445325257467A65555268636E6470626C526C5957316C59584E35"
+#define RTMP_KEY "79736C36655A4F576B596F41436D74646F70543170664E6C59584E35636E527A63477870646D5745567778576F502B6C2F69426C59584E35"
+#define RTSP_KEY "6D75724D7A4A4F576B596F41436D74646F70543170664E6C59584E35636E527A63477870646D5868567778576F502B6C2F69426C59584E35"
 #endif
 
 #define BUFFER_SIZE  1024*1024
 
-#define MAX_CHANNEL_INDEX 16	//user defined Channel number
+//用户可自定义的RTSP转RTMP拉流转推流路数,官方工具版默认1路拉转推，用户可通过代码定制多路RTSP转RTMP
+#define MAX_CHANNEL_INDEX 1
 
-#define CONF_FILE_PATH  "Config.ini"  
+#define CONF_FILE_PATH  "easyrtsplive.ini"  
 
 typedef struct _channel_cfg_struct_t
 {
@@ -60,7 +59,6 @@ typedef struct _rtmp_pusher_struct_t
 	unsigned int u32AudioSamplerate;
 	unsigned int u32AudioChannel;
 	unsigned char* pAACCacheBuffer;
-
 }_rtmp_pusher;
 
 typedef struct _channel_info_struct_t
@@ -138,8 +136,8 @@ int Easy_APICALL __RTSPSourceCallBack( int _chid, void *_chPtr, int _mediatype, 
 					EASY_MEDIA_INFO_T mediaInfo;
 					memset(&mediaInfo, 0, sizeof(EASY_MEDIA_INFO_T));
 					mediaInfo.u32VideoFps = pChannel->fMediainfo.u32VideoFps;
-					mediaInfo.u32AudioSamplerate =pChannel->fMediainfo.u32AudioSamplerate ;		/* 音频采样率 */
-					mediaInfo.u32AudioChannel = pChannel->fMediainfo.u32AudioChannel;			/* 音频通道数 */
+					mediaInfo.u32AudioSamplerate =pChannel->fMediainfo.u32AudioSamplerate ;				/* 音频采样率 */
+					mediaInfo.u32AudioChannel = pChannel->fMediainfo.u32AudioChannel;					/* 音频通道数 */
 					mediaInfo.u32AudioBitsPerSample = pChannel->fMediainfo.u32AudioBitsPerSample;		/* 音频采样精度 */
 
 
@@ -204,10 +202,10 @@ int Easy_APICALL __RTSPSourceCallBack( int _chid, void *_chPtr, int _mediatype, 
 	if (_mediatype == EASY_SDK_AUDIO_FRAME_FLAG)
 	{
 		/* 音频编码 */
-// #define EASY_SDK_AUDIO_CODEC_AAC	0x15002		/* AAC */
-// #define EASY_SDK_AUDIO_CODEC_G711U	0x10006		/* G711 ulaw*/
-// #define EASY_SDK_AUDIO_CODEC_G711A	0x10007		/* G711 alaw*/
-// #define EASY_SDK_AUDIO_CODEC_G726	0x1100B		/* G726 */
+		// #define EASY_SDK_AUDIO_CODEC_AAC	0x15002			/* AAC */
+		// #define EASY_SDK_AUDIO_CODEC_G711U	0x10006		/* G711 ulaw*/
+		// #define EASY_SDK_AUDIO_CODEC_G711A	0x10007		/* G711 alaw*/
+		// #define EASY_SDK_AUDIO_CODEC_G726	0x1100B		/* G726 */
 		
 		unsigned char* pSendBuffer = NULL;
 		int nSendBufferLen = 0;
@@ -373,10 +371,24 @@ void ReleaseSpace(void)
 
 int main(int argc, char * argv[])
 {
+	printf("\n\n");
+	printf("****************************************************************\n");
+	printf("**************EasyRTSPLive工具版v2.0.19.0826(免费)**************\n");
+	printf("******工具版主要用于开发者调试与测试，只支持一路RTSP转RTMP******\n");
+	printf("******EasyRTSPLive工具版由open.tsingsee.com青犀开放平台提供*****\n");
+	printf("****************************************************************\n");
+	
+	//splash
+#ifdef _WIN32
+		Sleep(3000);
+#else
+		sleep(3);
+#endif
+
 	InitCfgInfo();
 
 	int iret = 0;
-	iret = EasyRTMP_Activate(KEY);
+	iret = EasyRTMP_Activate(RTMP_KEY);
 	if (iret <= 0)
 	{
 		printf("RTMP Activate error. ret=%d!!!\n", iret);
@@ -395,7 +407,7 @@ int main(int argc, char * argv[])
 	iret = EasyRTSP_Activate(RTSP_KEY);
 	if(iret <= 0)
 	{
-		printf("rtsp Activate error. ret=%d!!!\n", iret);
+		printf("RTSP Activate error. ret=%d!!!\n", iret);
 		getchar();
 		return -2;
 	}
